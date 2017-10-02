@@ -1,0 +1,261 @@
+[larken@sif a1]$ psql boat_reserves
+psql (9.6.4)
+Type "help" for help.
+
+boat_reserves=# DROP TABLE reservations;
+DROP TABLE
+boat_reserves=# DROP TABLE sailors;
+DROP TABLE
+boat_reserves=# DROP TABLE boats;
+DROP TABLE
+boat_reserves=#
+boat_reserves=# -- 1.
+boat_reserves=# CREATE TABLE sailors (
+boat_reserves(#     sid integer primary key,
+boat_reserves(#     sname varchar(20),
+boat_reserves(#     rating integer,
+boat_reserves(#     age integer
+boat_reserves(# );
+CREATE TABLE
+boat_reserves=#
+boat_reserves=# CREATE TABLE boats (
+boat_reserves(#     bid integer primary key,
+boat_reserves(#     bname varchar(15),
+boat_reserves(#     color varchar(15)
+boat_reserves(# );
+CREATE TABLE
+boat_reserves=#
+boat_reserves=# CREATE TABLE reservations (
+boat_reserves(#     sid integer references sailors(sid),
+boat_reserves(#     bid integer references boats(bid),
+boat_reserves(#     day varchar(10),
+boat_reserves(#     PRIMARY KEY (sid, bid)
+boat_reserves(# );
+CREATE TABLE
+boat_reserves=#
+boat_reserves=# -- 2.
+boat_reserves=#
+boat_reserves=# INSERT INTO boats VALUES
+boat_reserves-# (101, 'Interlake', 'blue'),
+boat_reserves-# (102, 'Interlake', 'red'),
+boat_reserves-# (103, 'Clipper', 'green'),
+boat_reserves-# (104, 'Marine', 'red');
+INSERT 0 4
+boat_reserves=#
+boat_reserves=#
+boat_reserves=# INSERT INTO sailors VALUES
+boat_reserves-# (22, 'Dustin', 7, 45),
+boat_reserves-# (29, 'Brutus', 1, 33),
+boat_reserves-# (31, 'Lubber', 8, 55),
+boat_reserves-# (32, 'Andy', 8, 25),
+boat_reserves-# (58, 'Rusty', 10, 35),
+boat_reserves-# (64, 'Horatio', 7, 35),
+boat_reserves-# (71, 'Zorba', 10, 16),
+boat_reserves-# (74, 'Horatio', 9, 35),
+boat_reserves-# (85, 'Art', 3, 25),
+boat_reserves-# (95, 'Bob', 3, 63);
+INSERT 0 10
+boat_reserves=#
+boat_reserves=#
+boat_reserves=# INSERT INTO reservations VALUES
+boat_reserves-# (22,101,'Monday'),
+boat_reserves-# (22,102,'Tuesday'),
+boat_reserves-# (22,103,'Wednesday'),
+boat_reserves-# (31,102,'Thursday'),
+boat_reserves-# (31,103,'Friday'),
+boat_reserves-# (31,104,'Saturday'),
+boat_reserves-# (64,101,'Sunday'),
+boat_reserves-# (64,102,'Monday'),
+boat_reserves-# (74,103,'Tuesday');
+INSERT 0 9
+boat_reserves=#
+boat_reserves=#
+boat_reserves=#
+boat_reserves=# -- INSERT into reservations values(57, 57, 'Monday'); -- this fails because foreign keys 57 & 57 don't exist
+boat_reserves=# -- DELETE from sailors where sid=22; -- this fails because this sailor has a reservation
+boat_reserves=#
+boat_reserves=# -- 3.
+boat_reserves=#
+boat_reserves=# -- (a)
+boat_reserves=# SELECT
+boat_reserves-#   sid,
+boat_reserves-#   rating
+boat_reserves-# FROM sailors;
+ sid | rating
+-----+--------
+  22 |      7
+  29 |      1
+  31 |      8
+  32 |      8
+  58 |     10
+  64 |      7
+  71 |     10
+  74 |      9
+  85 |      3
+  95 |      3
+(10 rows)
+
+boat_reserves=#
+boat_reserves=# -- (b)
+boat_reserves=# SELECT bname
+boat_reserves-# FROM boats
+boat_reserves-# WHERE color = 'red';
+   bname
+-----------
+ Interlake
+ Marine
+(2 rows)
+
+boat_reserves=#
+boat_reserves=# -- (c)
+boat_reserves=# SELECT DISTINCT color
+boat_reserves-# FROM boats;
+ color
+-------
+ blue
+ green
+ red
+(3 rows)
+
+boat_reserves=#
+boat_reserves=# -- (d)
+boat_reserves=# SELECT sname
+boat_reserves-# FROM (
+boat_reserves(#        SELECT
+boat_reserves(#          boats.color,
+boat_reserves(#          boats.bid,
+boat_reserves(#          reservations.sid,
+boat_reserves(#          sailors.sid,
+boat_reserves(#          sailors.sname
+boat_reserves(#        FROM boats
+boat_reserves(#          INNER JOIN reservations ON reservations.bid = boats.bid
+boat_reserves(#          INNER JOIN sailors ON reservations.sid = sailors.sid
+boat_reserves(#        WHERE boats.color = 'red'
+boat_reserves(#      ) AS reserves;
+  sname
+---------
+ Dustin
+ Lubber
+ Lubber
+ Horatio
+(4 rows)
+
+boat_reserves=#
+boat_reserves=# -- (e)
+boat_reserves=# SELECT DISTINCT bname
+boat_reserves-# FROM (
+boat_reserves(#        SELECT
+boat_reserves(#          boats.bname,
+boat_reserves(#          boats.bid,
+boat_reserves(#          reservations.sid,
+boat_reserves(#          sailors.sid,
+boat_reserves(#          sailors.age
+boat_reserves(#        FROM boats
+boat_reserves(#          INNER JOIN reservations ON reservations.bid = boats.bid
+boat_reserves(#          INNER JOIN sailors ON reservations.sid = sailors.sid
+boat_reserves(#        WHERE sailors.age > 25
+boat_reserves(#      ) AS reserves;
+   bname
+-----------
+ Clipper
+ Interlake
+ Marine
+(3 rows)
+
+boat_reserves=#
+boat_reserves=# -- (f)
+boat_reserves=# SELECT DISTINCT sname
+boat_reserves-# FROM (
+boat_reserves(#        SELECT
+boat_reserves(#          boats.color,
+boat_reserves(#          boats.bid,
+boat_reserves(#          reservations.sid,
+boat_reserves(#          sailors.sid,
+boat_reserves(#          sailors.sname
+boat_reserves(#        FROM boats
+boat_reserves(#          INNER JOIN reservations ON reservations.bid = boats.bid
+boat_reserves(#          INNER JOIN sailors ON reservations.sid = sailors.sid
+boat_reserves(#        WHERE boats.color != 'red' AND boats.color != 'green'
+boat_reserves(#      ) AS reserves;
+  sname
+---------
+ Horatio
+ Dustin
+(2 rows)
+
+boat_reserves=#
+boat_reserves=# -- (g)
+boat_reserves=# -- Find the name of each boat that was reserved by a sailor who has reserved
+boat_reserves=# -- a blue and a green boat.
+boat_reserves=#
+boat_reserves=# SELECT DISTINCT bname
+boat_reserves-# FROM reservations
+boat_reserves-#   INNER JOIN boats ON reservations.bid = boats.bid
+boat_reserves-# WHERE reservations.sid IN (
+boat_reserves(#   SELECT reservations.sid
+boat_reserves(#   FROM reservations
+boat_reserves(#     INNER JOIN boats ON reservations.bid = boats.bid
+boat_reserves(#   WHERE boats.color = 'blue' OR boats.color = 'green'
+boat_reserves(#   GROUP BY
+boat_reserves(#     reservations.sid
+boat_reserves(#   HAVING count(reservations.sid) >= 2
+boat_reserves(# );
+   bname
+-----------
+ Clipper
+ Interlake
+(2 rows)
+
+boat_reserves=#
+boat_reserves=# -- (h)
+boat_reserves=# SELECT bid
+boat_reserves-# FROM boats
+boat_reserves-# WHERE bid NOT IN (
+boat_reserves(#   SELECT DISTINCT bid
+boat_reserves(#   FROM reservations
+boat_reserves(# );
+ bid
+-----
+(0 rows)
+
+boat_reserves=#
+boat_reserves=# -- (i)
+boat_reserves=# SELECT DISTINCT bname
+boat_reserves-# FROM (
+boat_reserves(#        SELECT
+boat_reserves(#          boats.bname,
+boat_reserves(#          reservations.sid,
+boat_reserves(#          sailors.sid
+boat_reserves(#        FROM boats
+boat_reserves(#          INNER JOIN reservations ON reservations.bid = boats.bid
+boat_reserves(#          INNER JOIN sailors ON reservations.sid = sailors.sid
+boat_reserves(#        WHERE sailors.sid IN (
+boat_reserves(#          SELECT reservations.sid
+boat_reserves(#          FROM
+boat_reserves(#            reservations
+boat_reserves(#          GROUP BY
+boat_reserves(#            reservations.sid
+boat_reserves(#          HAVING
+boat_reserves(#            COUNT(reservations.sid) >= 2
+boat_reserves(#        )
+boat_reserves(#      ) AS reserves;
+   bname
+-----------
+ Clipper
+ Interlake
+ Marine
+(3 rows)
+
+boat_reserves=#
+boat_reserves=# -- (j)
+boat_reserves=# SELECT sid
+boat_reserves-# FROM
+boat_reserves-#   reservations
+boat_reserves-# GROUP BY
+boat_reserves-#   sid
+boat_reserves-# HAVING
+boat_reserves-#   COUNT(sid) = 1;
+ sid
+-----
+  74
+(1 row)
