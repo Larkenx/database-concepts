@@ -83,5 +83,20 @@
 
 \begin{enumerate}
     \item % problem one
+    Find the bookno of each book that is cited by at least one book that cost cost less than \$50.
+
+    \begin{displaymath}
+            \pi_{C.CitedBid}(\sigma_{B.Price\ <\ 50}\ (Cites\bowtie_{C.CitedBid=B.Bookno} Book))
+    \end{displaymath}
+
+    \item % problem two
+    Find the bookno and title of each book that was bought by a student who majors in CS and in Math. Let Major1 be a copy of Major with schema ($sid,major$).
+
+    \begin{displaymath}
+        \pi_{B.Bookno, B.Title}((Student \bowtie \sigma_{M.Major=Math\ \wedge\ M1.Major=CS} (Major \bowtie Major1))) \bowtie Buys \bowtie Book)
+
+        % \pi_{B.Bookno, B.Title}(\sigma_{M.Major='CS'\ \vee\ M.Major='Math'}(Student \bowtie Major \bowtie Buys \bowtie Book))
+    \end{displaymath}
+
 \end{enumerate}
 \end{document}
