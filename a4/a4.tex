@@ -86,7 +86,7 @@
     Find the bookno of each book that is cited by at least one book that cost cost less than \$50.
 
     \begin{displaymath}
-            \pi_{C.CitedBid}(\sigma_{B.Price\ <\ 50}\ (Cites\bowtie_{C.CitedBid=B.Bookno} Book))
+            \pi_{C.CitedBookno}(\sigma_{B.Price\ <\ 50}\ (Cites\bowtie_{C.CitedBookno=B.Bookno} Book))
     \end{displaymath}
 
     \item % problem two
@@ -96,6 +96,15 @@
         \pi_{B.Bookno, B.Title}((Student \bowtie \sigma_{M.Major=Math\ \wedge\ M1.Major=CS} (Major \bowtie Major1))) \bowtie Buys \bowtie Book)
 
         % \pi_{B.Bookno, B.Title}(\sigma_{M.Major='CS'\ \vee\ M.Major='Math'}(Student \bowtie Major \bowtie Buys \bowtie Book))
+    \end{displaymath}
+
+    \item % problem three
+    Find the sid-bookno pairs (s, b) pairs such student s bought book b and
+    such that book b is cited by at least two books that cost less than \$50. Let Cites1 be a copy of Cites with schema (Bookno, CitedBookNo).
+
+    \begin{displaymath}
+        % wanna find books cited by two books
+        \pi_{CitedBookno}(\sigma_{Price\ <\ 50} (\sigma_{C.CitedBookno=C1.CitedBookno\ \wedge\ C.BookNo \ne C1.BookNo}(Cites \times Cites1) \bowtie Book)) \bowtie Buys
     \end{displaymath}
 
 \end{enumerate}
