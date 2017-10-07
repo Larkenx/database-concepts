@@ -202,10 +202,116 @@ INSERT INTO major VALUES (1017, 'Anthropology');
 INSERT INTO major VALUES (1022, 'CS');
 INSERT INTO major VALUES (1015, 'Chemistry');
 
+\echo "Problem 1"
 -- 1
 WITH E1 AS (SELECT *
             FROM Cites
-              INNER JOIN Book ON Cites.CitedBookno = Book.Bookno)
+              INNER JOIN Book ON Cites.Bookno =
+                                 Book.Bookno) -- this returns cited books cited by books that cost less than 50 and yields the proper output
 SELECT DISTINCT CitedBookno
 FROM E1
 WHERE Price < 50;
+
+\echo "Problem 2"
+-- 2
+
+WITH E1 AS (SELECT
+              M.Sid,
+              M.Major  AS Major1,
+              M1.Major AS Major2
+            FROM Major M INNER JOIN Major M1 ON M1.Sid = M.Sid),
+    E2 AS (SELECT S.Sid
+           FROM Student S INNER JOIN E1 ON S.Sid = E1.Sid
+           WHERE E1.Major1 = 'CS' AND E1.Major2 = 'Math'),
+    E3 AS (SELECT
+             Buys.Sid,
+             Buys.Bookno
+           FROM E2
+             INNER JOIN Buys ON E2.Sid = Buys.Sid),
+    E4 AS (SELECT
+             Book.Bookno,
+             Book.Title
+           FROM E3
+             INNER JOIN Book ON E3.Bookno = Book.Bookno)
+SELECT DISTINCT
+  Bookno,
+  Title
+FROM E4;
+
+\echo "Problem 3"
+-- 3
+-- like number one, this returns cited books that cost less than 50. the question implies that we are seeking
+-- books *cited* by books costing less than 50
+WITH E1 AS (SELECT
+              C.Bookno,
+              C.CitedBookno
+            FROM Cites C, Cites C1
+            WHERE C.CitedBookno = C1.CitedBookno AND C.Bookno <> C1.Bookno),
+    E2 AS (SELECT CitedBookno, Price
+           FROM E1
+             INNER JOIN Book ON Book.Bookno = E1.CitedBookno),
+    E3 AS (SELECT CitedBookno
+           FROM E2
+           WHERE Price < 50)
+SELECT DISTINCT
+  Sid,
+  CitedBookno
+FROM Buys
+  INNER JOIN E3 ON Buys.Bookno = E3.CitedBookno;
+
+\echo "Problem 4"
+-- 4 TODO
+WITH E1 AS (SELECT Sid
+            FROM Student),
+    E2 AS (SELECT Bookno
+           FROM Book
+           WHERE Price > 50),
+    E3 AS (SELECT
+             Sid,
+             Bookno
+           FROM E2, Student),
+    E4 AS (SELECT *
+           FROM E3 EXCEPT SELECT *
+                          FROM Buys),
+    E5 AS (SELECT Sid
+           FROM E4)
+SELECT Sid
+FROM E5 EXCEPT SELECT sid
+               FROM E1;
+
+\echo "Problem 5"
+-- 5
+WITH E1 AS (SELECT Bookno
+            FROM Book EXCEPT SELECT Bookno
+                             FROM Buys),
+    E2 AS (SELECT Buys.Bookno
+           FROM Buys
+             INNER JOIN Major ON Major.Sid = Buys.Sid
+           WHERE Major = 'CS'),
+    E3 AS (SELECT Bookno
+           FROM Book EXCEPT SELECT Bookno
+                            FROM E2),
+    E4 AS (SELECT Bookno
+           FROM E1
+           UNION SELECT Bookno
+                 FROM E3)
+SELECT DISTINCT Bookno
+FROM E4;
+
+\echo "Problem 6"
+-- 6
+\echo "Attempt 6#1"
+-- this query gets the book number of every book except books that weren't purchased individually by every single CS student
+WITH E1 AS (Select Sid from Major WHERE Major='CS'), -- every student majoring in CS
+     E2 AS (SELECT Sid, Bookno from E1, Book), -- cartesian product of every CS student and every book
+     E3 AS (SELECT Buys.Sid, Buys.Bookno FROM Buys INNER JOIN E1 on E1.Sid=Buys.Sid), -- actual buys table of CS student purchases
+     E4 AS (SELECT Bookno from Book EXCEPT Select Bookno from Buys)
+SELECT Bookno from E2 EXCEPT SELECT Bookno FROM E3 UNION (SELECT Bookno FROM E4);
+
+\echo "Attempt 6#2"
+-- this query gets books not purchased exclusively by CS students
+WITH E1 AS (Select Sid from Major WHERE Major='CS'), -- every student majoring in CS
+     E2 AS (SELECT Sid from Major WHERE Major<>'CS'), -- all other students
+     E3 AS (SELECT Bookno from Buys INNER JOIN E1 on E1.Sid=Buys.Sid),
+     E4 AS (Select Bookno from Buys INNER JOIN E2 on E2.Sid=Buys.Sid)
+(SELECT Bookno from E3 except Select bookno from E4) UNION (SELECT Bookno FROM Book WHERE book.Bookno not in (select Buys.Bookno from buys))
