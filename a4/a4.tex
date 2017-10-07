@@ -94,9 +94,8 @@
 
     \begin{displaymath}
         \pi_{B.Bookno, B.Title}((Student \bowtie \sigma_{M.Major=Math\ \wedge\ M1.Major=CS} (Major \bowtie Major1))) \bowtie Buys \bowtie Book)
-
-        % \pi_{B.Bookno, B.Title}(\sigma_{M.Major='CS'\ \vee\ M.Major='Math'}(Student \bowtie Major \bowtie Buys \bowtie Book))
     \end{displaymath}
+    % \pi_{B.Bookno, B.Title}(\sigma_{M.Major='CS'\ \vee\ M.Major='Math'}(Student \bowtie Major \bowtie Buys \bowtie Book))
 
     \item % problem three
     Find the sid-bookno pairs (s, b) pairs such student s bought book b and
@@ -106,6 +105,41 @@
         % wanna find books cited by two books
         \pi_{CitedBookno}(\sigma_{Price\ <\ 50} (\sigma_{C.CitedBookno=C1.CitedBookno\ \wedge\ C.BookNo \ne C1.BookNo}(Cites \times Cites1) \bowtie Book)) \bowtie Buys
     \end{displaymath}
+
+    \item % problem four
+    Find the sid of each student who bought all books that cost more than \$50.
+    \begin{displaymath}
+        \pi_{sid}(Student) -
+            \pi_{sid}((Student\ \times\ (\pi_{bookno}(\sigma_{Price > 50}(Book)))) % cartesian product of students/books over 50
+            - Buys)] % minus those who didn't purchase all of the books
+    \end{displaymath}
+
+    \item % problem five
+    Find the Bookno of each book that was not bought by any student who majors in CS.
+
+    \begin{displaymath}
+        (\pi_{bookno}(Book) - \pi_{bookno}(Buys)) \cup (\pi_{bookno}(Book) - \pi_{bookno}(\sigma_{Major=CS}(Book \bowtie Major)))
+    \end{displaymath}
+
+    \item % problem six
+    Find the Bookno of each book that was not bought by all students who majors in CS.
+    \begin{displaymath}
+        % \pi_{bookno}(\pi_{sid}(\sigma_{Major=CS}(Major)) \bowtie Buys) % all the books purchased by CS students
+        % books purchased by a CS student with at least one other CS student who didn't buy that book
+        % -  \pi_{bookno}(\sigma_{T.Bookno \ne T1.Bookno\ \wedge\  }((Buys \bowtie Major) \times (Buys1 \bowtie Major)) )
+        % cross every possible book with every CS student, subtract the actual CS student buys. Any book remaining is a book not
+        % purchased by all students
+        \pi_{sid, bookno}(\sigma_{Major=CS}(Student \bowtie Major) \times Book) - \pi_{sid, bookno}(\sigma_{Major=CS}(Buys \bowtie Major))
+    \end{displaymath}
+
+    *\textit{I created a cartesian product of CS students and all possible books then did the set difference of that cartesian product
+    with all the CS student's purchased books. Any book remaining from that list must not have been purchased by every student.}
+
+    \item % problem seven
+    Find sid-bookno pairs (s, b) such that not all books bought by student s are books that cite book b.
+
+    \item % problem eight
+    Find sid-bookno pairs (s,b) such student s only bought books that cite book b.
 
 \end{enumerate}
 \end{document}
