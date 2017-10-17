@@ -26,12 +26,6 @@ CREATE TABLE Buys (
   Bookno INTEGER REFERENCES Book (Bookno)
 );
 
-DROP TABLE Buys;
-DROP TABLE Cites;
-DROP TABLE Major;
-DROP TABLE Student;
-DROP TABLE Book;
-
 -- Data for Assignment 4
 -- student
 
@@ -260,7 +254,7 @@ FROM Buys
   INNER JOIN E3 ON Buys.Bookno = E3.CitedBookno;
 
 \echo "Problem 4"
--- 4 TODO
+-- 4
 WITH E1 AS (SELECT Sid
             FROM Student),
     E2 AS (SELECT Bookno
