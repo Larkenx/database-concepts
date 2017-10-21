@@ -342,7 +342,13 @@ FROM student_majors;
 
 -- 3
 
+CREATE OR REPLACE VIEW citingbooksprice AS
+SELECT bookno, unnest(citingbooks), b.price from citingbooks, book
+  where
+
 -- (a) Find the bookno of each book that is cited by at least two books that cost less than $50.
+select b.bookno from book b
+where memberof(b.bookno, (select  ) )
 
 -- (b) Find the bookno and title of each book that was bought by a student who majors in CS and in Math.
 -- (c) Find the bookno of each book that is cited by exactly one book.
