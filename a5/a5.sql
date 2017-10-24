@@ -202,7 +202,7 @@ INSERT INTO major VALUES (1017, 'Anthropology');
 INSERT INTO major VALUES (1022, 'CS');
 INSERT INTO major VALUES (1015, 'Chemistry');
 
--- Problem 1
+\echo "Problem 1"
 
 CREATE OR REPLACE FUNCTION setunion(A ANYARRAY, B ANYARRAY)
   RETURNS ANYARRAY AS
@@ -217,7 +217,7 @@ SELECT array((SELECT *
              ORDER BY 1);
 $$ LANGUAGE SQL;
 
--- (a)
+\echo "(a)"
 
 CREATE OR REPLACE FUNCTION setintersection(A ANYARRAY, B ANYARRAY)
   RETURNS ANYARRAY AS
@@ -232,7 +232,7 @@ SELECT array((SELECT *
              ORDER BY 1);
 $$ LANGUAGE SQL;
 
--- (b)
+\echo "(b)"
 
 CREATE OR REPLACE FUNCTION setdifference(A ANYARRAY, B ANYARRAY)
   RETURNS ANYARRAY AS
@@ -254,7 +254,7 @@ $$
 SELECT x = SOME (S)
 $$ LANGUAGE SQL;
 
--- 2
+\echo "Problem 2"
 CREATE OR REPLACE VIEW student_books AS
   SELECT
     s.sid,
@@ -268,7 +268,7 @@ CREATE OR REPLACE VIEW student_books AS
 SELECT *
 FROM student_books;
 
--- 2.a
+\echo "(a)"
 -- Define a view book students(bookno,students)
 -- which associates with each book the set of students who bought that book.
 -- Observe that there may be books that are not bought by any student.
@@ -282,7 +282,7 @@ CREATE OR REPLACE VIEW book_students AS
 
 -- select * from book_students;
 
--- (b)
+\echo "(b)"
 -- Define a view book citedbooks(bookno,citedbooks) which associates with each book the set of books
 -- that are cited by that book. Observe that there may be books that cite no books.
 
@@ -297,7 +297,8 @@ CREATE OR REPLACE VIEW citedbooks AS
 SELECT *
 FROM citedbooks;
 
--- (c) Define a view book citingbooks(bookno,citingbooks) which associates with each book the set of
+\echo "(c)"
+-- Define a view book citingbooks(bookno,citingbooks) which associates with each book the set of
 --  books that cites that book. Observe that there may be books that are not cited.
 
 CREATE OR REPLACE VIEW citingbooks AS
@@ -311,55 +312,188 @@ CREATE OR REPLACE VIEW citingbooks AS
 SELECT *
 FROM citingbooks;
 
--- (d) Define a view major students(major,students) which associates with each major the set of
+\echo "(d)"
+-- Define a view major students(major,students) which associates with each major the set of
 -- students who have that major. (You can assume that each major has at least one student.)
 CREATE OR REPLACE VIEW major_students AS
-  SELECT distinct
+  SELECT DISTINCT
     m.major,
-    array(SELECT distinct m2.sid
+    array(SELECT DISTINCT m2.sid
           FROM major m2
           WHERE m2.major = m.major) AS students
   FROM major m
   ORDER BY m.major;
 
-SELECT *
-FROM major_students;
-
--- (e) Define a view student majors(sid,majors) which associates with each student the set of his or
+\echo "(e)"
+-- Define a view student majors(sid,majors) which associates with each student the set of his or
 -- her majors. Observe that there can be students who have no major.
 
 CREATE OR REPLACE VIEW student_majors AS
-  SELECT distinct
+  SELECT DISTINCT
     s.sid,
-    array(SELECT distinct m2.major
+    array(SELECT DISTINCT m2.major
           FROM major m2
           WHERE m2.sid = s.sid) AS majors
   FROM student s
   ORDER BY s.sid;
 
-SELECT *
-FROM student_majors;
 
--- 3
+\echo "Problem 3"
+\echo "(a) Find the bookno of each book that is cited by at least two books that cost less than $50."
+CREATE OR REPLACE VIEW books_citinglessthan50 AS
+  SELECT
+    DISTINCT
+    b.bookno,
+    p.bookno AS citedbookno
+  FROM citingbooks b, book p
+  WHERE memberof(p.bookno, b.citingbooks) AND p.price < 50;
 
-CREATE OR REPLACE VIEW citingbooksprice AS
-SELECT bookno, unnest(citingbooks), b.price from citingbooks, book
-  where
 
--- (a) Find the bookno of each book that is cited by at least two books that cost less than $50.
-select b.bookno from book b
-where memberof(b.bookno, (select  ) )
+SELECT bookno
+FROM (SELECT
+        DISTINCT
+        a.bookno,
+        array(SELECT b.citedbookno
+              FROM books_citinglessthan50 b
+              WHERE b.bookno = a.bookno) AS citedbooks
+      FROM books_citinglessthan50 a) AS result
+WHERE cardinality(citedbooks) >= 2;
 
--- (b) Find the bookno and title of each book that was bought by a student who majors in CS and in Math.
--- (c) Find the bookno of each book that is cited by exactly one book.
--- (d) Find the sid of each student who bought all books that cost more than $50.
--- (e) Find the sid of each student who bought no book that cost more than $50.
--- (f) Find the sid of each student who bought only books that cost more than $50.
--- (g) Find the sid of each students who bought exactly one book that cost less than $50.
--- (h) Find the bookno of each book that was not bought by any students who majors in CS.
--- (i) Find the Bookno of each book that was not bought by all students who majors in Anthropology.
--- (j) Find sid-bookno pairs (s, b) such that not all books bought by student s are books that cite book b.
--- (k) Find sid-bookno pairs (s,b) such student s only bought books that cite book b.
--- (l) Find the pairs (s1,s2) of different sids of students that buy the same books.
--- (m) Find the pairs (s1,s2) of different sids of students that buy the same number of books.
--- (n) Find the bookno of each book that cites all but two books. (In other words, for such a book, there exists only two books that it does not cite.)
+\echo "(b) Find the bookno and title of each book that was bought by a student who majors in CS and in Math."
+CREATE OR REPLACE VIEW cs_students AS
+  SELECT students
+  FROM major_students
+  WHERE major = 'CS';
+
+CREATE OR REPLACE VIEW math_students AS
+  SELECT students
+  FROM major_students
+  WHERE major = 'Math';
+
+CREATE OR REPLACE VIEW cs_math_students AS
+  SELECT setintersection((SELECT *
+                          FROM cs_students), (SELECT *
+                                              FROM math_students));
+
+SELECT DISTINCT
+  b.bookno,
+  b.title
+FROM book b, student_books s
+WHERE memberof(b.bookno, s.books) AND
+      memberof(s.sid, (SELECT *
+                       FROM cs_math_students))
+ORDER BY b.bookno;
+
+\echo "(c) Find the bookno of each book that is cited by exactly one book."
+SELECT DISTINCT bookno
+FROM citingbooks
+WHERE cardinality(citingbooks) = 1
+ORDER BY bookno;
+
+
+CREATE OR REPLACE VIEW cost_book AS
+  SELECT DISTINCT
+    b.price,
+    array(SELECT DISTINCT b2.bookno
+          FROM book b2
+          WHERE b2.price = b.price) AS books
+  FROM book b
+  ORDER BY b.price;
+
+CREATE OR REPLACE VIEW books_more_than_50 AS
+  SELECT DISTINCT array(SELECT bookno
+                        FROM book
+                        WHERE price > 50) AS books;
+
+CREATE OR REPLACE VIEW books_less_than_50 AS
+  SELECT DISTINCT array(SELECT bookno
+                        FROM book
+                        WHERE price < 50) AS books;
+
+\echo "(d) Find the sid of each student who bought all books that cost more than $50."
+SELECT DISTINCT s.sid
+FROM student_books s
+WHERE s.books <@ (SELECT *
+                  FROM books_more_than_50)
+      AND (SELECT *
+           FROM books_more_than_50) <@ s.books;
+
+\echo "(e) Find the sid of each student who bought no book that cost more than $50."
+SELECT DISTINCT s.sid
+FROM student_books s
+WHERE NOT s.books && (SELECT *
+                      FROM books_more_than_50);
+
+\echo "(f) Find the sid of each student who bought only books that cost more than $50."
+SELECT DISTINCT s.sid
+FROM student_books s
+WHERE s.books <@ (SELECT *
+                  FROM books_more_than_50);
+
+\echo "(g) Find the sid of each students who bought exactly one book that cost less than $50."
+SELECT DISTINCT s.sid
+FROM student_books s
+WHERE cardinality(setintersection(s.books, (SELECT *
+                                            FROM books_less_than_50))) = 1;
+
+\echo "(h) Find the bookno of each book that was not bought by any students who majors in CS."
+SELECT bookno
+FROM book_students
+WHERE NOT students && (SELECT *
+                       FROM cs_students);
+
+\echo "(i) Find the Bookno of each book that was not bought by all students who majors in Anthropology."
+CREATE OR REPLACE VIEW anthropology_students AS
+  SELECT students
+  FROM major_students
+  WHERE major = 'Anthropology';
+
+-- this works somehow
+-- checking to see if each singleton set of book does not exist in atleast one of the sets of books purchased by anthro students
+SELECT c.bookno
+FROM book c
+WHERE NOT array(SELECT b.bookno
+                FROM book b
+                WHERE b.bookno = c.bookno) <@ ALL (SELECT books
+                                                   FROM student_books
+                                                   WHERE memberof(sid, (SELECT *
+                                                                        FROM
+                                                                          anthropology_students)));
+
+\echo "(j) Find sid-bookno pairs (s, b) such that not all books bought by student s are books that cite book b."
+SELECT DISTINCT
+  s.sid,
+  b.bookno
+FROM student_books s, citingbooks b
+WHERE cardinality(s.books) <> cardinality(setintersection(b.citingbooks, s.books));
+
+\echo "(k) Find sid-bookno pairs (s,b) such student s only bought books that cite book b."
+SELECT DISTINCT
+  s.sid,
+  b.bookno
+FROM student_books s, citingbooks b
+WHERE cardinality(s.books) = cardinality(setintersection(b.citingbooks, s.books));
+
+\echo "(l) Find the pairs (s1,s2) of different sids of students that buy the same books."
+SELECT DISTINCT
+  s1.sid,
+  s2.sid
+FROM student_books s1, student_books s2
+WHERE s1.sid <> s2.sid AND s1.books <@ s2.books AND s1.books @> s2.books;
+
+\echo "(m) Find the pairs (s1,s2) of different sids of students that buy the same number of books."
+SELECT DISTINCT
+  s1.sid,
+  s2.sid
+FROM student_books s1, student_books s2
+WHERE s1.sid <> s2.sid AND cardinality(s1.books) = cardinality(s2.books);
+
+\echo "(n) Find the bookno of each book that cites all but two books. (In other words, for such a book, there exists only two books that it does not cite.)"
+CREATE OR REPLACE VIEW all_books AS
+  SELECT array(SELECT bookno
+               FROM book);
+
+SELECT c.bookno
+FROM citedbooks c
+WHERE (cardinality((SELECT *
+                    FROM all_books)) - 2) = cardinality(c.citedbooks)

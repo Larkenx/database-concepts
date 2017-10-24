@@ -3,7 +3,7 @@ CREATE FUNCTION
 CREATE FUNCTION
 CREATE FUNCTION
 CREATE VIEW
- sid  |                        books                        
+ sid  |                        books
 ------+-----------------------------------------------------
  1001 | {2002,2007,2009,2011,2013}
  1002 | {2001,2002,2007,2011,2012,2013}
@@ -30,7 +30,7 @@ CREATE VIEW
 (22 rows)
 
 CREATE VIEW
- bookno |                                     students                                      
+ bookno |                                     students
 --------+-----------------------------------------------------------------------------------
    2001 | {1002,1007,1009,1010,1013,1017,1020}
    2002 | {1001,1002,1003,1007,1009,1010,1011,1017,1040}
@@ -49,7 +49,7 @@ CREATE VIEW
 (14 rows)
 
 CREATE VIEW
- bookno |                          citedbooks                           
+ bookno |                          citedbooks
 --------+---------------------------------------------------------------
    2001 | {2002,2007}
    2002 | {2003}
@@ -68,7 +68,7 @@ CREATE VIEW
 (14 rows)
 
 CREATE VIEW
- bookno |   citingbooks    
+ bookno |   citingbooks
 --------+------------------
    2001 | {2003,2010,2012}
    2002 | {2001,2003,2010}
@@ -87,7 +87,7 @@ CREATE VIEW
 (14 rows)
 
 CREATE VIEW
-    major     |                 students                  
+    major     |                 students
 --------------+-------------------------------------------
  Anthropology | {1017}
  Biology      | {1009,1010}
@@ -100,7 +100,7 @@ CREATE VIEW
 (8 rows)
 
 CREATE VIEW
- sid  |     majors      
+ sid  |     majors
 ------+-----------------
  1001 | {Math,Physics}
  1002 | {CS,Math}
@@ -126,12 +126,12 @@ CREATE VIEW
  1040 | {}
 (22 rows)
 
-     
+
 -------------
  Problem 3.a
 (1 row)
 
- bookno 
+ bookno
 --------
    2001
    2002
@@ -140,12 +140,12 @@ CREATE VIEW
    2007
 (5 rows)
 
-     
+
 -------------
  Problem 3.b
 (1 row)
 
- bookno |        title         
+ bookno |        title
 --------+----------------------
    2001 | Databases
    2002 | OperatingSystems
@@ -155,12 +155,12 @@ CREATE VIEW
    2011 | Anthropology
 (6 rows)
 
-     
+
 -------------
  Problem 3.c
 (1 row)
 
- bookno 
+ bookno
 --------
    2005
    2006
@@ -171,22 +171,22 @@ CREATE VIEW
    2014
 (7 rows)
 
-     
+
 -------------
  Problem 3.d
 (1 row)
 
- sid  
+ sid
 ------
  1023
 (1 row)
 
-     
+
 -------------
  Problem 3.e
 (1 row)
 
- sid  
+ sid
 ------
  1001
  1015
@@ -195,12 +195,12 @@ CREATE VIEW
  1040
 (5 rows)
 
-     
+
 -------------
  Problem 3.f
 (1 row)
 
- sid  
+ sid
 ------
  1015
  1016
@@ -209,36 +209,36 @@ CREATE VIEW
  1023
 (5 rows)
 
-     
+
 -------------
  Problem 3.g
 (1 row)
 
- sid  | sname 
-------+-------
- 1011 | Nick
- 1013 | Lisa
- 1020 | Ahmed
- 1040 | Sofie
+ sid
+------
+ 1011
+ 1013
+ 1020
+ 1040
 (4 rows)
 
-     
+
 -------------
  Problem 3.h
 (1 row)
 
- bookno 
+ bookno
 --------
    2004
    2005
 (2 rows)
 
-     
+
 -------------
  Problem 3.i
 (1 row)
 
- bookno 
+ bookno
 --------
    2004
    2005
@@ -251,12 +251,12 @@ CREATE VIEW
    2014
 (9 rows)
 
-     
+
 -------------
  Problem 3.j
 (1 row)
 
- sid  | bookno 
+ sid  | bookno
 ------+--------
  1001 |   2001
  1001 |   2002
@@ -525,12 +525,12 @@ CREATE VIEW
  1040 |   2014
 (265 rows)
 
-     
+
 -------------
  Problem 3.k
 (1 row)
 
- sid  | bookno 
+ sid  | bookno
 ------+--------
  1015 |   2001
  1015 |   2002
@@ -577,12 +577,12 @@ CREATE VIEW
  1040 |   2003
 (43 rows)
 
-     
+
 -------------
  Problem 3.l
 (1 row)
 
- sid  | sid  
+ sid  | sid
 ------+------
  1004 | 1006
  1005 | 1008
@@ -596,12 +596,12 @@ CREATE VIEW
  1021 | 1016
 (10 rows)
 
-     
+
 -------------
  Problem 3.m
 (1 row)
 
- sid  | sid  
+ sid  | sid
 ------+------
  1001 | 1003
  1001 | 1009
@@ -651,13 +651,12 @@ CREATE VIEW
  1040 | 1022
 (46 rows)
 
-     
+
 -------------
  Problem 3.n
 (1 row)
 
- bookno 
+ bookno
 --------
    2010
 (1 row)
-
