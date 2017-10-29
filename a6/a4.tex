@@ -1,0 +1,122 @@
+% LaTeX Article Template - customizing header and footer
+\documentclass{article}
+
+\newtheorem{thm}{Theorem}
+
+% Set left margin - The default is 1 inch, so the following
+% command sets a 1.25-inch left margin.
+% \setlength{\oddsidemargin}{0.05in}
+
+% Set width of the text - What is left will be the right margin.
+% In this case, right margin is 8.5in - 1.25in - 6in = 1.25in.
+\setlength{\textwidth}{8in}
+
+% Set top margin - The default is 1 inch, so the following
+% command sets a 0.75-inch top margin.
+\setlength{\topmargin}{-0.25in}
+
+% Set height of the header
+\setlength{\headheight}{0.3in}
+
+% Set vertical distance between the header and the text
+\setlength{\headsep}{0.2in}
+
+% Set height of the text
+\setlength{\textheight}{8.5in}
+
+% Set vertical distance between the text and the
+% bottom of footer
+\setlength{\footskip}{0.1in}
+
+% Set the beginning of a LaTeX document
+\usepackage{multirow}
+\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amssymb}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{float}
+\usepackage{enumitem}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=sql,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\graphicspath{%
+    {converted_graphics/}% inserted by PCTeX
+    {/}% inserted by PCTeX
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}\title{Assignment $6$\\ Computer Science \\ Fall 2017\\ B461}         % Enter your title between curly braces
+\author{Steven Myers}        % Enter your name between curly braces
+\date{\today}          % Enter your date or \today between curly braces
+\maketitle
+
+% Redefine "plain" pagestyle
+\makeatother     % `@' is restored as a "non-letter" character
+
+% Set to use the "plain" pagestyle
+\pagestyle{plain}
+
+\section*{Answers}
+
+\begin{enumerate}
+    \item % problem one
+    \paragraph{Definitions}
+    Let any relation with a number (e.g $b1$, $b2$, $b3$...) be copies of the relation
+    \begin{enumerate}
+        \item % (a)
+        \begin{displaymath}
+            \pi_{sid, bookno}
+                (\sigma_{Buys.bookno \ne Buys2.bookno \wedge Student.name='Eric' \wedge Buys.bookno \ne '2010'}
+                    (Student \times\ Buys \times\ Buys2))
+        \end{displaymath}
+
+        \item % (b)
+        \begin{lstlisting}
+            SELECT DISTINCT b.bookno, b.title
+            FROM book b, student s
+            WHERE b.price = SOME(select b1.price
+                                 from buys t, book b1
+                                 where b1.price > 50 and
+                                 s.sid = t.sid and
+                                 t.bookno = b1.bookno);
+        \end{lstlisting}
+        \begin{lstlisting}
+            SELECT DISTINCT b.bookno, b.title
+            FROM book b, student s
+            WHERE b.price = SOME(select b1.price
+                                 from buys t, book b1, student s1
+                                 where b1.price > 50 and
+                                 s1.sid = t.sid and
+                                 t.bookno = b1.bookno);
+        \end{lstlisting}
+
+    \end{enumerate}
+
+    \item
+
+
+\end{enumerate}
+\end{document}
