@@ -13,13 +13,13 @@
 
 % Set top margin - The default is 1 inch, so the following
 % command sets a 0.75-inch top margin.
-\setlength{\topmargin}{-0.25in}
+\setlength{\topmargin}{-0.05in}
 
 % Set height of the header
-\setlength{\headheight}{0.3in}
+\setlength{\headheight}{0.2in}
 
 % Set vertical distance between the header and the text
-\setlength{\headsep}{0.2in}
+\setlength{\headsep}{0.1in}
 
 % Set height of the text
 \setlength{\textheight}{8.5in}
@@ -45,18 +45,16 @@
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
 \definecolor{mauve}{rgb}{0.58,0,0.82}
 
-\lstset{frame=tb,
-  language=sql,
-  aboveskip=3mm,
-  belowskip=3mm,
-  showstringspaces=false,
+\lstset{language=sql,
+  aboveskip=2mm,
+  belowskip=2mm,
   columns=flexible,
   basicstyle={\small\ttfamily},
   numbers=none,
   numberstyle=\tiny\color{gray},
   keywordstyle=\color{blue},
   commentstyle=\color{dkgreen},
-  stringstyle=\color{mauve},
+  stringstyle=\color{dkgreen},
   breaklines=true,
   breakatwhitespace=true,
   tabsize=3
@@ -83,9 +81,8 @@
 
 \begin{enumerate}
     \item % problem one
-    \paragraph{Definitions}
-    Let any relation with a number (e.g $b1$, $b2$, $b3$...) be copies of the relation
-    \begin{enumerate}
+        \begin{enumerate}
+
         \item % (a)
         \begin{displaymath}
             \pi_{sid, bookno}
@@ -94,24 +91,195 @@
         \end{displaymath}
 
         \item % (b)
-        \begin{lstlisting}
+        \begin{enumerate}
+
+            \item Original Query
+            \begin{lstlisting}
+                SELECT DISTINCT b.bookno, b.title
+                FROM book b, student s
+                WHERE b.price = SOME(select b1.price
+                                     from buys t, book b1
+                                     where b1.price > 50 and
+                                     s.sid = t.sid and
+                                     t.bookno = b1.bookno);
+            \end{lstlisting}
+
+            \item Convert from using SOME to an exists statement
+            \begin{lstlisting}
             SELECT DISTINCT b.bookno, b.title
             FROM book b, student s
-            WHERE b.price = SOME(select b1.price
-                                 from buys t, book b1
-                                 where b1.price > 50 and
-                                 s.sid = t.sid and
-                                 t.bookno = b1.bookno);
-        \end{lstlisting}
-        \begin{lstlisting}
+            WHERE EXISTS(select 1
+                         from buys t, book b1
+                         where b1.price > 50 and
+                         s.sid = t.sid and
+                         t.bookno = b1.bookno);
+            \end{lstlisting}
+
+            \item Push down student $s$ relation into subquery as $s1$.
+            \begin{lstlisting}
             SELECT DISTINCT b.bookno, b.title
             FROM book b, student s
-            WHERE b.price = SOME(select b1.price
-                                 from buys t, book b1, student s1
-                                 where b1.price > 50 and
-                                 s1.sid = t.sid and
-                                 t.bookno = b1.bookno);
-        \end{lstlisting}
+            WHERE EXISTS(select 1
+                         from buys t, book b1, student s1
+                         where b1.price > 50 and
+                         s1.sid = t.sid and
+                         t.bookno = b1.bookno);
+            \end{lstlisting}
+
+            \item The inner query can be translated as:
+            \begin{displaymath}
+                \pi_{b1.price}(
+                    \sigma_{b1.price>50 \wedge s1.sid=t.sid \wedge t.bookno=b1.bookno}(T \times B1 \times S1
+                    ))
+            \end{displaymath}
+
+            \item Finally, we perform the semi-join with the inner query and the student and book relation:
+            \begin{displaymath}
+                \pi_{b.bookno, b.title}(S \times B) \ltimes
+                \pi_{b1.price}(
+                    \sigma_{b1.price>50 \wedge s1.sid=t.sid \wedge t.bookno=b1.bookno}(T \times B1 \times S1
+                    ))
+            \end{displaymath}
+
+
+
+        \end{enumerate}
+
+        \item % (c)
+
+        \begin{enumerate}
+            \item Original Query
+            \begin{lstlisting}
+            SELECT b.bookno
+            FROM book b
+            WHERE b.bookno IN
+            (SELECT b1.bookno FROM book b1 WHERE b1.price > 50)
+            UNION
+            (SELECT c.bookno FROM cites c);
+            \end{lstlisting}
+
+            \item RA representation of inner query (simple translation)
+            \begin{displaymath}
+                \pi_{bookno}(\sigma_{price > 50}(book)) \cup \pi_{bookno}(cites)
+            \end{displaymath}
+
+            \item Since the IN predicate is equivalent to saying that there exists one bookno for which a bookno in the inner query matches, we can use the semi join
+
+            \begin{displaymath}
+                \pi_{bookno}(book) \ltimes \pi_{bookno}(\sigma_{price > 50}(book)) \cup \pi_{bookno}(cites)
+            \end{displaymath}
+
+        \end{enumerate}
+
+        \item % (d)
+
+        \begin{enumerate}
+            \item Original Query
+            \begin{lstlisting}
+                SELECT b.bookno FROM book b
+                WHERE b.price >= 80 and
+                NOT EXISTS(SELECT b1.bookno
+                            FROM book b1
+                            WHERE b1.Price > b.Price);
+            \end{lstlisting}
+
+            \item First, push down book b relation into subquery as book b2.
+            \begin{lstlisting}
+                SELECT b.bookno FROM book b
+                WHERE b.price >= 80 and
+                NOT EXISTS(SELECT b1.bookno
+                            FROM book b1, book b2
+                            WHERE b1.Price > b2.Price);
+            \end{lstlisting}
+
+            \item Now, we can properly translate the inner query as:
+            \begin{displaymath}
+                \pi_{b1.bookno}(\sigma_{b1.price>b2.price}(B1 \times B2))
+            \end{displaymath}
+
+            \item To preserve the semantics of the original outer query, we need to perform an anti-semi join:
+            \begin{displaymath}
+                \pi_{b.bookno}(\sigma_{b.price >= 80}(B \ \overline{\ltimes}\ \pi_{b1.bookno}(\sigma_{b1.price>b2.price}(B1 \times B2))))
+            \end{displaymath}
+
+        \end{enumerate}
+        \newpage
+        \item % (e)
+        \begin{enumerate}
+            \item Original query:
+            \begin{lstlisting}
+            SELECT s.sid
+            FROM Student s
+            WHERE EXISTS(SELECT 1
+                        FROM Book b
+                        WHERE b.price > 50 AND
+                        b.bookno IN (SELECT t.bookno
+                                    FROM Buys t
+                                    WHERE s.sid = t.sid AND
+                                    s.sname = 'Eric'))
+
+            \end{lstlisting}
+
+            \item First, push down parameterized values in the inner-most query. We will push down the student $s$ relation as $s1$.
+            \begin{lstlisting}
+            SELECT s.sid
+            FROM Student s
+            WHERE EXISTS(SELECT 1
+                        FROM Book b
+                        WHERE b.price > 50 AND
+                        b.bookno IN (SELECT t.bookno
+                                    FROM Buys t, Student s1
+                                    WHERE s1.sid = t.sid AND
+                                    s1.sname = 'Eric'))
+
+            \end{lstlisting}
+
+            \item Next, convert the first inner subquery IN expression into an EXISTS statement. We can do this by pushing the book relation completely into the inner most subquery and adding its conditions
+            \begin{lstlisting}
+            SELECT s.sid
+            FROM Student s
+            WHERE EXISTS(SELECT t.bookno
+                                    FROM Buys t, Student s1, Book b
+                                    WHERE s1.sid = t.sid AND
+                                    b.price > 50 AND
+                                    b.bookno = t.bookno
+                                    s1.sname = 'Eric')
+
+            \end{lstlisting}
+
+            \item We can translate the inner query as:
+            \begin{displaymath}
+                \pi_{t.bookno}(\sigma_{s1.sid=t.sid\ \wedge\ b.price > 50\ \wedge\ b.bookno = t.bookno\ \wedge\ s1.sname='Eric'}(S1 \times B \times T))
+            \end{displaymath}
+
+            \item Finally, we can translate our outer exists expression with a semijoin and project the student sid.
+            \begin{displaymath}
+                \pi_{s.sid}(S \ltimes
+                \pi_{t.bookno}(\sigma_{s1.sid=t.sid\ \wedge\ b.price > 50\ \wedge\ b.bookno = t.bookno\ \wedge\ s1.sname='Eric'}(S1 \times B \times T)))
+
+            \end{displaymath}
+
+        \end{enumerate}
+
+        \item % (f)
+        \begin{enumerate}
+
+            \item Original query:
+            \begin{lstlisting}
+            SELECT s1.sid, s2.sid
+            FROM student s1, student s2
+            WHERE s1.sid <> s2.sid AND
+            NOT EXISTS(SELECT 1
+                        FROM Buys t1
+                        WHERE t1.sid = s1.sid AND
+                        t1.bookno NOT IN (SELECT t2.bookno
+                                        FROM Buys t2
+                                        WHERE t2.sid = s2.sid));
+            \end{lstlisting}
+
+            \item ...
+
+        \end{enumerate}
 
     \end{enumerate}
 
