@@ -256,10 +256,11 @@
             \begin{displaymath}
                 \pi_{s.sid}(S \ltimes
                 \pi_{t.bookno}(\sigma_{s1.sid=t.sid\ \wedge\ b.price > 50\ \wedge\ b.bookno = t.bookno\ \wedge\ s1.sname='Eric'}(S1 \times B \times T)))
-
             \end{displaymath}
 
         \end{enumerate}
+
+        \newpage
 
         \item % (f)
         \begin{enumerate}
@@ -277,7 +278,48 @@
                                         WHERE t2.sid = s2.sid));
             \end{lstlisting}
 
-            \item ...
+            \item For the deepest query, we need to translate the NOT IN statement to NOT EXISTS.
+            \begin{lstlisting}
+            SELECT s1.sid, s2.sid
+            FROM student s1, student s2
+            WHERE s1.sid <> s2.sid AND
+            NOT EXISTS(SELECT 1
+                        FROM Buys t1
+                        WHERE t1.sid = s1.sid AND
+                        NOT EXISTS (SELECT 1
+                                    FROM Buys t2
+                                    WHERE t2.sid = s2.sid AND t1.bookno <> t2.bookno));
+            \end{lstlisting}
+
+            \item We now need to push down our relations recursively from the top and middle queries to the deepest query.
+            \begin{lstlisting}
+            SELECT s1.sid, s2.sid
+            FROM student s1, student s2
+            WHERE s1.sid <> s2.sid AND
+            NOT EXISTS(SELECT 1
+                        FROM Buys t, Student s1, Student s2
+                        WHERE t.sid = s1.sid AND
+                        NOT EXISTS (SELECT t2.sid, t1.bookno, t2.bookno, s1.sid
+                                    FROM Buys t2, Buys t1, Student S1, Student S2
+                                    WHERE t2.sid = s2.sid AND t1.bookno <> t2.bookno));
+            \end{lstlisting}
+
+            \item Now that we've pushed down the upper query's relations into deeper queries, we can translate the deepest
+            query as:
+            \begin{displaymath}
+                \varepsilon = \pi_{t2.sid, t1.bookno, t2.bookno, s1.sid}(\sigma_{t2.sid=s2.sid \wedge t1.bookno \ne t2.bookno}(T1 \times T2 \times S1 \times S2))
+            \end{displaymath}
+
+            \item Our middle query then can be translated as:
+            \begin{displaymath}
+                \tau = \pi_{s1.sid, s2.sid, t.bookno}(\sigma_{t.sid=s1.sid}(T \times S1 \times S2) \overline{\ltimes} \varepsilon)
+            \end{displaymath}
+
+            \item Finally, we can semijoin the top level query in an expression like so:
+            \begin{displaymath}
+                \pi_{s1.sid, s2.sid}(\sigma_{s1.sid \ne s2.sid}(S1 \times S2) \overline{\ltimes} \tau)
+            \end{displaymath}
+
 
         \end{enumerate}
 
