@@ -325,8 +325,73 @@
 
     \end{enumerate}
 
-    \item
+    \item  % problem two
+    \begin{enumerate}
+
+    \item % (a)
+    \begin{enumerate}
+        \item % (a)
+        Original RA Expression:
+        \begin{displaymath}
+            \pi_{sid, bookno}
+                (\sigma_{Buys.bookno \ne Buys2.bookno \wedge Student.name='Eric' \wedge Buys.bookno \ne '2010'}
+                    (Student \times\ Buys \times\ Buys2))
+            \end{displaymath}
+    \end{enumerate}
 
 
-\end{enumerate}
+    \item % (b)
+    \begin{enumerate}
+        \item Original RA Expression: % (b)
+        \begin{displaymath}
+            \pi_{b.bookno, b.title}(S \times B) \ltimes
+            \pi_{b1.price}(
+                \sigma_{b1.price>50 \wedge s1.sid=t.sid \wedge t.bookno=b1.bookno}(T \times B1 \times S1
+                ))
+        \end{displaymath}
+    \end{enumerate}
+
+
+    \item % (c)
+    \begin{enumerate}
+        \item Original RA Expression: % (c)
+        \begin{displaymath}
+            \pi_{b.bookno}(\sigma_{b.price >= 80}(B \ \overline{\ltimes}\ \pi_{b1.bookno}(\sigma_{b1.price>b2.price}(B1 \times B2))))
+        \end{displaymath}
+    \end{enumerate}
+
+    \item % (d)
+    \begin{enumerate}
+        \item Original RA Expression % (d)
+        \begin{displaymath}
+            \pi_{b.bookno}(\sigma_{b.price >= 80}(B \ \overline{\ltimes}\ \pi_{b1.bookno}(\sigma_{b1.price>b2.price}(B1 \times B2))))
+        \end{displaymath}
+    \end{enumerate}
+
+    \item % e
+    \begin{enumerate}
+        \item Original RA Expression: % (e)
+        \begin{displaymath}
+            \pi_{s.sid}(S \ltimes
+            \pi_{t.bookno}(\sigma_{s1.sid=t.sid\ \wedge\ b.price > 50\ \wedge\ b.bookno = t.bookno\ \wedge\ s1.sname='Eric'}(S1 \times B \times T)))
+        \end{displaymath}
+
+    \end{enumerate}
+
+    \item % f
+    \begin{enumerate}
+        \item Original RA Expression: % (f)
+        \begin{displaymath}
+            \varepsilon = \pi_{t2.sid, t1.bookno, t2.bookno, s1.sid}(\sigma_{t2.sid=s2.sid \wedge t1.bookno \ne t2.bookno}(T1 \times T2 \times S1 \times S2))
+        \end{displaymath}
+
+        \begin{displaymath}
+            \tau = \pi_{s1.sid, s2.sid, t.bookno}(\sigma_{t.sid=s1.sid}(T \times S1 \times S2) \overline{\ltimes} \varepsilon)
+        \end{displaymath}
+
+        \begin{displaymath}
+            \pi_{s1.sid, s2.sid}(\sigma_{s1.sid \ne s2.sid}(S1 \times S2) \overline{\ltimes} \tau)
+        \end{displaymath}
+    \end{enumerate}
+
 \end{document}
