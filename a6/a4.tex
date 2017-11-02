@@ -82,13 +82,26 @@
 \begin{enumerate}
     \item % problem one
         \begin{enumerate}
-
         \item % (a)
-        \begin{displaymath}
-            \pi_{sid, bookno}
-                (\sigma_{Buys.bookno \ne Buys2.bookno \wedge Student.name='Eric' \wedge Buys.bookno \ne '2010'}
-                    (Student \times\ Buys \times\ Buys2))
-        \end{displaymath}
+        \begin{enumerate}
+                \item Original Query:
+                \begin{lstlisting}
+                    SELECT  s.sid, b1.bookno
+                    FROM    student s, buys b1, buys b2
+                    WHERE   s.sid = b1.sid AND
+                    s.sid= b2.sid AND
+                    b1.bookno <> b2.bookno AND
+                    s.sname = 'Eric' and b1.bookno <> '2010';
+                \end{lstlisting}
+
+                \item Translated into RA:
+                \begin{displaymath}
+                    \pi_{sid, bookno}
+                        (\sigma_{Buys.bookno \ne Buys2.bookno \wedge Student.name='Eric' \wedge Buys.bookno \ne '2010'}
+                            (Student \times\ Buys \times\ Buys2))
+                \end{displaymath}
+
+        \end{enumerate}
 
         \item % (b)
         \begin{enumerate}
@@ -140,8 +153,6 @@
                     \sigma_{b1.price>50 \wedge s1.sid=t.sid \wedge t.bookno=b1.bookno}(T \times B1 \times S1
                     ))
             \end{displaymath}
-
-
 
         \end{enumerate}
 
@@ -320,23 +331,38 @@
                 \pi_{s1.sid, s2.sid}(\sigma_{s1.sid \ne s2.sid}(S1 \times S2) \overline{\ltimes} \tau)
             \end{displaymath}
 
-
         \end{enumerate}
-
     \end{enumerate}
+
+    \newpage
 
     \item  % problem two
     \begin{enumerate}
 
     \item % (a)
     \begin{enumerate}
-        \item % (a)
-        Original RA Expression:
-        \begin{displaymath}
-            \pi_{sid, bookno}
-                (\sigma_{Buys.bookno \ne Buys2.bookno \wedge Student.name='Eric' \wedge Buys.bookno \ne '2010'}
-                    (Student \times\ Buys \times\ Buys2))
+            \item %
+            Original RA Expression:
+            \begin{displaymath}
+                \pi_{sid, bookno}
+                    (\sigma_{Buys.bookno \ne Buys2.bookno \wedge Student.name='Eric' \wedge Buys.bookno \ne '2010'}
+                        (Student \times\ Buys \times\ Buys2))
             \end{displaymath}
+
+            \item Rule of Cascading Selections and pushing selections over cartesian products:
+            \begin{displaymath}
+                \pi_{sid, bookno}
+                    (\sigma_{Buys.bookno \ne Buys2.bookno}
+                        (\sigma_{sname='Eric'}(Student) \times\ \sigma_{bookno \ne '2010'}(Buys) \times\ Buys2))
+            \end{displaymath}
+
+            \item Now we can only project the required attributes from each relation in the cartesian product:
+            \begin{flalign*}
+                \pi_{sid, bookno}( &\\
+                \ \ \sigma_{Buys.bookno \ne Buys2.bookno}( &\\
+                \ \ \ \ \pi_{sid}((\sigma_{sname='Eric'}(Student)) \times\ \pi_{bookno}(\sigma_{bookno \ne '2010'}(Buys)) \times\ \pi_{bookno}(Buys2)))
+            \end{flalign}
+
     \end{enumerate}
 
 
@@ -393,5 +419,9 @@
             \pi_{s1.sid, s2.sid}(\sigma_{s1.sid \ne s2.sid}(S1 \times S2) \overline{\ltimes} \tau)
         \end{displaymath}
     \end{enumerate}
+
+\end{enumerate}
+\end{enumerate}
+
 
 \end{document}
