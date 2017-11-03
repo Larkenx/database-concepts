@@ -40,6 +40,7 @@
 \usepackage{color}
 \usepackage{float}
 \usepackage{enumitem}
+\usepackage{amsmath}
 
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
@@ -97,8 +98,8 @@
                 \item Translated into RA:
                 \begin{displaymath}
                     \pi_{sid, bookno}
-                        (\sigma_{Buys.bookno \ne Buys2.bookno \wedge Student.name='Eric' \wedge Buys.bookno \ne '2010'}
-                            (Student \times\ Buys \times\ Buys2))
+                        (\sigma_{B.bookno \ne B2.bookno \wedge S.name='Eric' \wedge B.bookno \ne '2010'}
+                            (S \times\ B \times\ B2))
                 \end{displaymath}
 
         \end{enumerate}
@@ -148,10 +149,10 @@
 
             \item Finally, we perform the semi-join with the inner query and the student and book relation:
             \begin{displaymath}
-                \pi_{b.bookno, b.title}(S \times B) \ltimes
+                \pi_{b.bookno, b.title}(S \times B \ltimes
                 \pi_{b1.price}(
                     \sigma_{b1.price>50 \wedge s1.sid=t.sid \wedge t.bookno=b1.bookno}(T \times B1 \times S1
-                    ))
+                    )))
             \end{displaymath}
 
         \end{enumerate}
@@ -231,12 +232,12 @@
 
             \end{lstlisting}
 
-            \item First, push down parameterized values in the inner-most query. We will push down the student $s$ relation as $s1$.
+            \item First, push down parameterized values in the inner-most query. We will push down the student $s$ relation as $s1$ and $s2$.
             \begin{lstlisting}
             SELECT s.sid
             FROM Student s
             WHERE EXISTS(SELECT 1
-                        FROM Book b
+                        FROM Book b, Student s2
                         WHERE b.price > 50 AND
                         b.bookno IN (SELECT t.bookno
                                     FROM Buys t, Student s1
@@ -245,18 +246,42 @@
 
             \end{lstlisting}
 
-            \item Next, convert the first inner subquery IN expression into an EXISTS statement. We can do this by pushing the book relation completely into the inner most subquery and adding its conditions
+            \item Now, we push down the book b relation into the deepest level query :
             \begin{lstlisting}
             SELECT s.sid
             FROM Student s
-            WHERE EXISTS(SELECT t.bookno
-                                    FROM Buys t, Student s1, Book b
+            WHERE EXISTS(SELECT 1
+                        FROM Book b, Student s2
+                        WHERE b.price > 50 AND
+                        b.bookno IN (SELECT t.bookno
+                                    FROM Buys t, Student s1, Book b1
                                     WHERE s1.sid = t.sid AND
-                                    b.price > 50 AND
-                                    b.bookno = t.bookno
-                                    s1.sname = 'Eric')
+                                    s1.sname = 'Eric'))
+            \end{lstlisting}
+
+            \item Next, convert the first inner subquery IN expression into an EXISTS statement.
+            \begin{lstlisting}
+            SELECT s.sid
+            FROM Student s
+            WHERE EXISTS(SELECT 1
+                        FROM Book b, Student s2
+                        WHERE b.price > 50 AND
+                        EXISTS (SELECT 1
+                                    FROM Buys t, Student s1
+                                    WHERE s1.sid = t.sid AND
+                                    b.bookno = t.bookno AND
+                                    s1.sname = 'Eric'))
 
             \end{lstlisting}
+
+            \item Now we can properly translate the SQL to RA:
+
+            \begin{displaymath}
+
+                \pi_{bookno}(\sigma_{price > 50}(B)) \ltimes
+                \pi_{t.bookno}(\sigma_{s1.sid=t.sid \wedge b1.book=t.bookno \wedge s1.sname='Eric'}(T \times S1 \ times B1)) % deepest query
+            \end{displaymath}
+
 
             \item We can translate the inner query as:
             \begin{displaymath}
@@ -352,16 +377,16 @@
             \item Rule of Cascading Selections and pushing selections over cartesian products:
             \begin{displaymath}
                 \pi_{sid, bookno}
-                    (\sigma_{Buys.bookno \ne Buys2.bookno}
-                        (\sigma_{sname='Eric'}(Student) \times\ \sigma_{bookno \ne '2010'}(Buys) \times\ Buys2))
+                    (\sigma_{B.bookno \ne B2.bookno}
+                        (\sigma_{sname='Eric'}(S) \times\ \sigma_{bookno \ne '2010'}(B) \times\ B2))
             \end{displaymath}
 
             \item Now we can only project the required attributes from each relation in the cartesian product:
             \begin{flalign*}
-                \pi_{sid, bookno}( &\\
-                \ \ \sigma_{Buys.bookno \ne Buys2.bookno}( &\\
-                \ \ \ \ \pi_{sid}((\sigma_{sname='Eric'}(Student)) \times\ \pi_{bookno}(\sigma_{bookno \ne '2010'}(Buys)) \times\ \pi_{bookno}(Buys2)))
-            \end{flalign}
+                \pi_{sid, bookno}&( & \\
+                &\sigma_{B.bookno \ne B2.bookno}( &\\
+                &&\pi_{sid}((\sigma_{sname='Eric'}(S)) \times\ \pi_{bookno}(\sigma_{bookno \ne '2010'}(B)) \times\ \pi_{bookno}(B2))) &
+            \end{flalign*}
 
     \end{enumerate}
 
@@ -370,25 +395,40 @@
     \begin{enumerate}
         \item Original RA Expression: % (b)
         \begin{displaymath}
-            \pi_{b.bookno, b.title}(S \times B) \ltimes
+            \pi_{b.bookno, b.title}(S \times B \ltimes
             \pi_{b1.price}(
                 \sigma_{b1.price>50 \wedge s1.sid=t.sid \wedge t.bookno=b1.bookno}(T \times B1 \times S1
                 ))
         \end{displaymath}
-    \end{enumerate}
 
+        \item Cascade selections and pushing over cartesian products: % (b)
+        \begin{displaymath}
+            \pi_{b.bookno, b.title}(S \times B \ltimes
+            \pi_{b1.price}( S1 \bowtie (T \bowtie B1) \times \sigma_{price>50}(B1)))
+        \end{displaymath}
+
+        \item Now we only project the pieces we need. We can just grab the sid from the Student relation, since no pieces
+        of the Student relation is used.
+        \begin{displaymath}
+            \pi_{b.bookno, b.title}(\pi_{sid}(S) \times B \ltimes
+            \pi_{b1.price}( \pi_{sid}(S1) \bowtie (T \bowtie B1) \times \sigma_{price>50}(\pi_{price}(B1))))
+        \end{displaymath}
+
+    \end{enumerate}
 
     \item % (c)
     \begin{enumerate}
-        \item Original RA Expression: % (c)
+        \item Original RA Expression. Already optimized! % (c)
         \begin{displaymath}
-            \pi_{b.bookno}(\sigma_{b.price >= 80}(B \ \overline{\ltimes}\ \pi_{b1.bookno}(\sigma_{b1.price>b2.price}(B1 \times B2))))
+            \pi_{bookno}(book) \ltimes \pi_{bookno}(\sigma_{price > 50}(book)) \cup \pi_{bookno}(cites)
         \end{displaymath}
+
+
     \end{enumerate}
 
     \item % (d)
     \begin{enumerate}
-        \item Original RA Expression % (d)
+        \item Original RA Expression. Already optimized! % (d)
         \begin{displaymath}
             \pi_{b.bookno}(\sigma_{b.price >= 80}(B \ \overline{\ltimes}\ \pi_{b1.bookno}(\sigma_{b1.price>b2.price}(B1 \times B2))))
         \end{displaymath}
@@ -398,8 +438,6 @@
     \begin{enumerate}
         \item Original RA Expression: % (e)
         \begin{displaymath}
-            \pi_{s.sid}(S \ltimes
-            \pi_{t.bookno}(\sigma_{s1.sid=t.sid\ \wedge\ b.price > 50\ \wedge\ b.bookno = t.bookno\ \wedge\ s1.sname='Eric'}(S1 \times B \times T)))
         \end{displaymath}
 
     \end{enumerate}
