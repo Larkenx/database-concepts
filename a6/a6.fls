@@ -1,7 +1,7 @@
 PWD C:/Users/Larken/git/database-concepts/a6
 INPUT C:/Users/Larken/AppData/Local/MiKTeX/2.9/miktex/data/le/pdftex/pdflatex.fmt
-INPUT C:/Users/Larken/git/database-concepts/a6/a4.tex
-OUTPUT a4.log
+INPUT C:/Users/Larken/git/database-concepts/a6/a6.tex
+OUTPUT a6.log
 INPUT C:/Program Files/MiKTeX 2.9/tex/latex/base/article.cls
 INPUT C:/Program Files/MiKTeX 2.9/tex/latex/base/article.cls
 INPUT C:/Program Files/MiKTeX 2.9/tex/latex/base/size10.clo
@@ -64,9 +64,9 @@ INPUT C:/Program Files/MiKTeX 2.9/tex/latex/amsmath/amsopn.sty
 INPUT C:/Program Files/MiKTeX 2.9/tex/latex/amsmath/amsopn.sty
 INPUT C:/Users/Larken/AppData/Roaming/MiKTeX/2.9/tex/latex/listings/lstlang1.sty
 INPUT C:/Users/Larken/AppData/Roaming/MiKTeX/2.9/tex/latex/listings/lstlang1.sty
-INPUT a4.aux
-INPUT a4.aux
-OUTPUT a4.aux
+INPUT a6.aux
+INPUT a6.aux
+OUTPUT a6.aux
 INPUT C:/Users/Larken/AppData/Roaming/MiKTeX/2.9/tex/context/base/supp-pdf.mkii
 INPUT C:/Users/Larken/AppData/Roaming/MiKTeX/2.9/tex/context/base/supp-pdf.mkii
 INPUT C:/Program Files/MiKTeX 2.9/tex/generic/oberdiek/pdftexcmds.sty
@@ -127,9 +127,9 @@ INPUT C:/Program Files/MiKTeX 2.9/fonts/tfm/public/amsfonts/symbols/msam7.tfm
 INPUT C:/Program Files/MiKTeX 2.9/fonts/tfm/public/amsfonts/symbols/msam5.tfm
 INPUT C:/Program Files/MiKTeX 2.9/fonts/tfm/public/amsfonts/symbols/msbm7.tfm
 INPUT C:/Program Files/MiKTeX 2.9/fonts/tfm/public/amsfonts/symbols/msbm5.tfm
-OUTPUT a4.pdf
+OUTPUT a6.pdf
 INPUT C:/Users/Larken/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map
-INPUT a4.aux
+INPUT a6.aux
 INPUT C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 INPUT C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 INPUT C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmmi10.pfb
