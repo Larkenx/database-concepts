@@ -1,45 +1,118 @@
-DROP TABLE Graph;
-CREATE TABLE Graph (
+DROP TABLE E;
+CREATE TABLE E (
   Source INTEGER,
   Target INTEGER
 );
-INSERT INTO GRAPH VALUES
+INSERT INTO E VALUES
   (1, 2),
+  (2, 1),
   (1, 3),
-  (2, 3),
-  (3, 4),
-  (4, 1);
+  (3, 1);
 
-CREATE OR REPLACE FUNCTION get_nodes()
-  RETURNS ANYARRAY AS
+DROP TABLE AC;
+CREATE TABLE AC (
+  vertex INTEGER
+);
+DROP TABLE E_COPY;
+CREATE TABLE E_COPY (
+  source INTEGER,
+  target INTEGER
+);
+
+-- Transitive Closure function from the lectures
+
+CREATE OR REPLACE FUNCTION new_TC_pairs()
+  RETURNS TABLE(source INTEGER, target INTEGER) AS
 $$
-WITH src AS (SELECT source
-             FROM graph),
-    tgt AS (SELECT target
-            FROM graph)
-SELECT array((SELECT *
-              FROM src)
-             UNION
-             (SELECT *
-              FROM tgt))
+(SELECT
+   TC.source,
+   E_COPY.target
+ FROM TC, E_COPY
+ WHERE TC.target = E_COPY.source)
+EXCEPT
+(SELECT
+   source,
+   target
+ FROM TC);
 $$ LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION get_edges(node INTEGER)
-  RETURNS INTEGER [] AS
-$$
-SELECT array(SELECT target
-             FROM graph
-             WHERE source = node)
-$$ LANGUAGE SQL;
-
-
-CREATE OR REPLACE FUNCTION articulation_points()
-  RETURNS BOOLEAN AS
-$$
-
+CREATE OR REPLACE FUNCTION Transitive_Closure()
+  RETURNS VOID AS $$
+BEGIN
+  DROP TABLE IF EXISTS TC;
+  CREATE TABLE TC (
+    source INTEGER,
+    target INTEGER
+  );
+  INSERT INTO TC SELECT *
+                 FROM E_COPY;
+  WHILE exists(SELECT *
+               FROM new_TC_pairs())
+  LOOP
+    INSERT INTO TC SELECT *
+                   FROM new_TC_pairs();
+  END LOOP;
+END;
 $$ LANGUAGE plpgsql;
 
-SELECT get_edges(1);
+CREATE OR REPLACE FUNCTION is_not_connected()
+  RETURNS BOOLEAN AS $$
+-- i want to take all of the possible vertices from the graph E, and
+-- create a cartesian product of edges (u,v) such that i have all of the vertices
+-- then, create a transitive closure of E and subtract it from the cartesian product.
+-- if any nodes are left over, then the graph E is *not* connected because the transitive closure
+-- must contain all pairs (u,v) in order for a graph to be strongly connected.
+SELECT EXISTS(
+    SELECT DISTINCT
+      E1.source,
+      E2.target
+    FROM E_COPY E1, E_COPY E2
+    EXCEPT
+    SELECT
+      TC.source,
+      TC.target
+    FROM TC
+);
+$$ LANGUAGE SQL;
+
+SELECT Transitive_Closure();
+
+SELECT is_not_connected();
+
+
+-- PLAN FOR ARTICULATION POINTS:
+-- *Adapt transitive closure functions to work on E_COPY table created in articulation points
+-- LOOP through all vertices. For each vertex:
+-- Remove all edges associated with it from G.
+-- If G is still connected, then the vertex is not an articulation point.
+-- If G is not connected, then the vertex is an articulation point. Put it in the list of articulation points
+CREATE OR REPLACE FUNCTION articulation_points()
+  RETURNS VOID AS $$
+DECLARE vertex        INTEGER := NULL;
+        not_connected BOOLEAN := FALSE;
+BEGIN
+  FOR vertex IN SELECT DISTINCT source FROM E
+  LOOP
+    TRUNCATE TABLE E_COPY;
+    INSERT INTO E_COPY SELECT *
+                       FROM E
+                       WHERE E.source <> vertex AND E.target <> vertex;
+    -- now we need to update our transitive closure, but we just need this to be a side-effect
+    PERFORM Transitive_Closure();
+    -- if removing the vertex and its edges from E cause it to be disconnected, then
+    -- it is an articulation point
+    IF (select is_not_connected())
+    THEN
+      INSERT INTO AC VALUES (vertex);
+    END IF;
+  END LOOP;
+END
+$$ LANGUAGE plpgsql;
+
+select * from TC;
+SELECT articulation_points();
+
+select * from AC;
 
 
 CREATE TABLE A (
@@ -49,6 +122,7 @@ INSERT INTO A VALUES
   (1),
   (2),
   (3);
+
 
 CREATE OR REPLACE FUNCTION powerset(INTEGER [])
   RETURNS TABLE(subset INTEGER []) AS $$
@@ -73,19 +147,19 @@ BEGIN
     tmp := '{}';
 
     -- for every powerset we've already added to the powerset
-    for i in 0..array_length(ps, 1)
+    FOR i IN 0..array_length(ps, 1)
     LOOP
       RAISE NOTICE 'Entering FOR loop through arrays in powerset';
       RAISE NOTICE 'Array length of PS is %', array_length(ps, 1);
---       RAISE NOTICE '{';
---       FOREACH v IN ARRAY arr
---       LOOP
---         RAISE NOTICE '%',  v;
---       END LOOP;
---       RAISE NOTICE '}';
+      --       RAISE NOTICE '{';
+      --       FOREACH v IN ARRAY arr
+      --       LOOP
+      --         RAISE NOTICE '%',  v;
+      --       END LOOP;
+      --       RAISE NOTICE '}';
 
-      tmp := array_append(tmp, ps[i]);
-      tmp := array_append(tmp, array_append(ps[i], val));
+      tmp := array_append(tmp, ps [i]);
+      tmp := array_append(tmp, array_append(ps [i], val));
     END LOOP;
     ps := tmp;
 
@@ -109,10 +183,11 @@ SELECT *
 FROM powersetA;
 
 
-create table test (
-  mdarr integer[][]
+CREATE TABLE test (
+  mdarr INTEGER [] []
 );
 
-insert into test values ('{{1,2,3}}')
+INSERT INTO test VALUES ('{{1,2,3}}')
 
-select array_length(mdarr, 1) from test;
+SELECT array_length(mdarr, 1)
+FROM test;
