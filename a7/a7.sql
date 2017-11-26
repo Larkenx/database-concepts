@@ -217,8 +217,8 @@ $$ LANGUAGE plpgsql;
 -- produces a relation of (person, generation) where the generation is the person's depth in the family tree
 CREATE OR REPLACE FUNCTION generations()
   RETURNS TABLE(person INTEGER, generation INTEGER) AS $$
-DECLARE p              INTEGER; -- current person we want to calculate generation
-        depth          INTEGER;
+DECLARE p     INTEGER; -- current person we want to calculate generation
+        depth INTEGER;
 BEGIN
   DROP TABLE IF EXISTS generations;
   CREATE TABLE generations (
@@ -227,27 +227,37 @@ BEGIN
   );
 
   -- for each person, their depth is the number of times they appear as a descendant in the ANC relation
-  FOR p IN ((SELECT DISTINCT pc.p FROM pc) UNION (SELECT DISTINCT pc.c FROM pc)) -- all persons
+  FOR p IN ((SELECT DISTINCT pc.p
+             FROM pc)
+            UNION (SELECT DISTINCT pc.c
+                   FROM pc)) -- all persons
   LOOP
-      depth := (select count(anc.d) from ANC where anc.d=p);
-      insert into generations values (p, depth);
+    depth := (SELECT count(anc.d)
+              FROM ANC
+              WHERE anc.d = p);
+    INSERT INTO generations VALUES (p, depth);
   END LOOP;
 
-  RETURN QUERY(select * from generations);
+  RETURN QUERY (SELECT *
+                FROM generations);
 END;
 $$ LANGUAGE PLPGSQL;
 
-select * from generations();
+SELECT *
+FROM generations();
 
 CREATE OR REPLACE FUNCTION same_gen_pairs()
-  RETURNS TABLE(id1 integer, id2 integer) AS $$
-    select g1.person, g2.person
-    from generations g1, generations g2
-    where g1.generation=g2.generation
-    order by 1,2
+  RETURNS TABLE(id1 INTEGER, id2 INTEGER) AS $$
+SELECT
+  g1.person,
+  g2.person
+FROM generations g1, generations g2
+WHERE g1.generation = g2.generation
+ORDER BY 1, 2
 $$ LANGUAGE SQL;
 
-select * from same_gen_pairs();
+SELECT *
+FROM same_gen_pairs();
 
 -- Problem 3
 
@@ -285,3 +295,85 @@ $$ LANGUAGE plpgsql;
 SELECT powerset('{5,6,7}');
 
 -- Problem 4
+DROP TABLE IF EXISTS Weighted_Graph;
+CREATE TABLE Weighted_Graph (
+  source INTEGER,
+  target INTEGER,
+  weight INTEGER
+);
+
+INSERT INTO Weighted_Graph VALUES
+  (1, 2, 5),
+  (2, 1, 5),
+  (1, 3, 3),
+  (3, 1, 3),
+  (2, 3, 2),
+  (3, 2, 2),
+  (2, 5, 2),
+  (5, 2, 2),
+  (3, 5, 4),
+  (5, 3, 4),
+  (2, 4, 8),
+  (4, 2, 8);
+
+
+(SELECT Weighted_Graph.target
+ FROM Weighted_Graph
+ WHERE weight = (SELECT min(weight)
+                 FROM Weighted_Graph
+                 WHERE source = 1) AND Weighted_Graph.source = 1)
+CREATE OR REPLACE FUNCTION MST()
+  RETURNS TABLE(source INTEGER, target INTEGER) AS $$
+DECLARE v INTEGER;
+        u INTEGER;
+BEGIN
+  DROP TABLE IF EXISTS visited;
+  CREATE TABLE visited (
+    vertex INTEGER,
+  );
+  DROP TABLE IF EXISTS cheapest_connections;
+  CREATE TABLE cheapest_connections (
+    vertex INTEGER,
+    target INTEGER,
+    cost   INTEGER
+  );
+  DROP TABLE IF EXISTS MST;
+  CREATE TABLE MST (
+    source INTEGER,
+    target INTEGER
+  );
+
+
+  v := (SELECT 1
+        FROM (SELECT DISTINCT source
+              FROM Weighted_Graph) AS random_vertex); --- select a vertex
+
+  INSERT INTO visited VALUES (v); -- this node has been visited
+
+  -- while not all nodes are in the MST
+  WHILE (NOT exists(((SELECT DISTINCT source
+                      FROM Weighted_Graph) EXCEPT (SELECT source
+                                                   FROM visited))
+                    UNION ((SELECT DISTINCT source
+                            FROM visited) EXCEPT (SELECT DISTINCT source
+                                              FROM Weighted_Graph))))
+  LOOP
+    -- select the node with a connection to v with the min weight
+    u := (SELECT Weighted_Graph.target
+        FROM Weighted_Graph
+        WHERE weight = (SELECT MIN(weight)
+                        FROM Weighted_Graph
+                        WHERE source = v) AND Weighted_Graph.source = v); -- find the vertex with
+
+    insert into MST values (v,u);
+    insert into visited values (u);
+
+  END LOOP;
+
+
+
+  INSERT INTO MST VALUES (v, );
+
+
+END;
+$$ LANGUAGE PLPGSQL;
