@@ -27,11 +27,11 @@ CREATE TABLE E_COPY (
   source INTEGER,
   target INTEGER
 );
-  DROP TABLE IF EXISTS TC;
-  CREATE TABLE TC (
-    source INTEGER,
-    target INTEGER
-  );
+DROP TABLE IF EXISTS TC;
+CREATE TABLE TC (
+  source INTEGER,
+  target INTEGER
+);
 -- Transitive Closure function from the lectures
 CREATE OR REPLACE FUNCTION new_TC_pairs()
   RETURNS TABLE(source INTEGER, target INTEGER) AS
@@ -160,6 +160,17 @@ INSERT INTO PC VALUES
   (1, 5),
   (5, 9);
 
+DROP TABLE IF EXISTS generations;
+CREATE TABLE generations (
+  person     INTEGER,
+  generation INTEGER
+);
+
+DROP TABLE IF EXISTS ANC;
+CREATE TABLE ANC (
+  A INTEGER,
+  D INTEGER
+);
 -- Ancestor relationships from lecture
 
 CREATE OR REPLACE FUNCTION new_ANC_pairs()
@@ -179,11 +190,7 @@ $$ LANGUAGE SQL;
 CREATE OR REPLACE FUNCTION Ancestor_Descendant()
   RETURNS TABLE(person INTEGER, descendant INTEGER) AS $$
 BEGIN
-  DROP TABLE IF EXISTS ANC;
-  CREATE TABLE ANC (
-    A INTEGER,
-    D INTEGER
-  );
+
   INSERT INTO ANC SELECT *
                   FROM PC;
   WHILE exists(SELECT *
@@ -205,11 +212,7 @@ CREATE OR REPLACE FUNCTION generations()
 DECLARE p     INTEGER; -- current person we want to calculate generation
         depth INTEGER;
 BEGIN
-  DROP TABLE IF EXISTS generations;
-  CREATE TABLE generations (
-    person     INTEGER,
-    generation INTEGER
-  );
+
 
   -- for each person, their depth is the number of times they appear as a descendant in the ANC relation
   FOR p IN ((SELECT DISTINCT pc.p
@@ -535,27 +538,30 @@ BEGIN
   END LOOP;
 
   RETURN QUERY (SELECT *
-                FROM sorted order by sorted.index);
+                FROM sorted
+                ORDER BY sorted.index);
 END;
 $$ LANGUAGE PLPGSQL;
 
 
-create or replace function init_heap()
-RETURNS VOID AS $$
+CREATE OR REPLACE FUNCTION init_heap()
+  RETURNS VOID AS $$
 BEGIN
-  perform heap_insert(3);
-  perform heap_insert(1);
-  perform heap_insert(2);
-  perform heap_insert(0);
-  perform heap_insert(7);
-  perform heap_insert(8);
-  perform heap_insert(9);
-  perform heap_insert(11);
-  perform heap_insert(1); -- notice duplicate values
-  perform heap_insert(3); -- notice duplicate values
+  PERFORM heap_insert(3);
+  PERFORM heap_insert(1);
+  PERFORM heap_insert(2);
+  PERFORM heap_insert(0);
+  PERFORM heap_insert(7);
+  PERFORM heap_insert(8);
+  PERFORM heap_insert(9);
+  PERFORM heap_insert(11);
+  PERFORM heap_insert(1); -- notice duplicate values
+  PERFORM heap_insert(3); -- notice duplicate values
 END;
 $$ LANGUAGE PLPGSQL;
 
-select init_heap();
+SELECT init_heap();
 
-select distinct * from heap_sort() order by 1;
+SELECT DISTINCT *
+FROM heap_sort()
+ORDER BY 1;
