@@ -27,7 +27,11 @@ CREATE TABLE E_COPY (
   source INTEGER,
   target INTEGER
 );
-
+  DROP TABLE IF EXISTS TC;
+  CREATE TABLE TC (
+    source INTEGER,
+    target INTEGER
+  );
 -- Transitive Closure function from the lectures
 CREATE OR REPLACE FUNCTION new_TC_pairs()
   RETURNS TABLE(source INTEGER, target INTEGER) AS
@@ -47,11 +51,7 @@ $$ LANGUAGE SQL;
 CREATE OR REPLACE FUNCTION Transitive_Closure()
   RETURNS VOID AS $$
 BEGIN
-  DROP TABLE IF EXISTS TC;
-  CREATE TABLE TC (
-    source INTEGER,
-    target INTEGER
-  );
+
   INSERT INTO TC SELECT *
                  FROM E_COPY;
   WHILE exists(SELECT *
@@ -280,7 +280,7 @@ $$ LANGUAGE plpgsql;
 SELECT powerset('{5,6,7}');
 
 -- Problem 4
-DROP TABLE IF EXISTS Weighted_Graph;
+DROP TABLE IF EXISTS Weighted_Graph CASCADE;
 CREATE TABLE Weighted_Graph (
   source INTEGER,
   target INTEGER,
