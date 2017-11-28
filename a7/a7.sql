@@ -348,11 +348,14 @@ BEGIN
             g.target IN (SELECT *
                          FROM visited); -- requirement 2
 
-    SELECT c.source, c.target into min_edge -- requirement 3
-         FROM candidates c
-         WHERE c.weight <= ALL(SELECT weight
-                            FROM candidates)
-         LIMIT 1;
+    SELECT
+      c.source,
+      c.target
+    INTO min_edge -- requirement 3
+    FROM candidates c
+    WHERE c.weight <= ALL (SELECT weight
+                           FROM candidates)
+    LIMIT 1;
 
     u := min_edge.source;
     v := min_edge.target;
@@ -367,4 +370,192 @@ BEGIN
 END
 $$ LANGUAGE PLPGSQL;
 
-SELECT * FROM MST();
+SELECT *
+FROM MST();
+
+-- Problem 5
+-- NOTE: I created a min-heap as opposed to a max-heap.
+DROP TABLE IF EXISTS data;
+CREATE TABLE data (
+  index INTEGER,
+  value INTEGER
+);
+CREATE OR REPLACE FUNCTION get(i INTEGER) -- returns data at index
+  RETURNS INTEGER AS $$
+BEGIN
+  RETURN (SELECT d.value
+          FROM data d
+          WHERE d.index = i);
+END;
+$$ LANGUAGE PLPGSQL;
+CREATE OR REPLACE FUNCTION heap_swap(i INTEGER, j INTEGER)
+  RETURNS VOID AS $$
+DECLARE tmp  INTEGER;
+        tmp2 INTEGER;
+BEGIN
+  tmp := (get(i));
+  tmp2 := (get(j));
+  UPDATE data
+  SET value = tmp
+  WHERE index = j;
+  UPDATE data
+  SET value = tmp2
+  WHERE index = i;
+END;
+
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION heap_left(index INTEGER)
+  RETURNS INTEGER AS $$
+BEGIN
+  RETURN 2 * index + 1;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION heap_right(index INTEGER)
+  RETURNS INTEGER AS $$
+BEGIN
+  RETURN 2 * (index + 1);
+END
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION heap_parent(index INTEGER)
+  RETURNS INTEGER AS $$
+BEGIN
+  RETURN floor((index - 1) / 2);
+END
+$$ LANGUAGE PLPGSQL;
+CREATE OR REPLACE FUNCTION heap_increase_key(index INTEGER)
+  RETURNS VOID AS $$
+DECLARE parent_index INTEGER;
+        i            INTEGER;
+BEGIN
+  i := index;
+  WHILE ((index <> 0) AND (get(heap_parent(i)) > get(i)))
+  LOOP
+    parent_index := heap_parent(i);
+    PERFORM heap_swap(i, parent_index);
+    i := parent_index;
+  END LOOP;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION heap_insert(n INTEGER) -- index starts at zero
+  RETURNS VOID AS $$
+DECLARE new_index INTEGER;
+BEGIN
+  IF ((SELECT count(*)
+       FROM data) = 0)
+  THEN
+    new_index := 0;
+  ELSE
+    new_index := (SELECT max(index)
+                  FROM data) + 1;
+  END IF;
+
+  INSERT INTO data VALUES (new_index, n);
+  PERFORM heap_increase_key(new_index);
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION heap_heapify(index INTEGER)
+  RETURNS VOID AS $$
+DECLARE l        INTEGER;
+        r        INTEGER;
+        smallest INTEGER;
+        heapSize INTEGER;
+BEGIN
+  l := heap_left(index);
+  r := heap_right(index);
+  heapSize := (SELECT count(*)
+               FROM data);
+  IF ((l < heapSize) AND (get(index) > get(l)))
+  THEN
+    smallest := l;
+  ELSE
+    smallest := index;
+  END IF;
+
+  IF ((r < heapSize) AND (get(smallest) > get(r)))
+  THEN
+    smallest := r;
+  END IF;
+
+  IF (smallest <> index)
+  THEN
+    PERFORM heap_swap(index, smallest);
+    PERFORM heap_heapify(smallest);
+  END IF;
+
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION heap_extractMin()
+  RETURNS INTEGER AS $$
+DECLARE min      INTEGER;
+        tmp      INTEGER;
+        heapSize INTEGER;
+BEGIN
+  min := get(0);
+  heapSize := (SELECT count(*)
+               FROM data);
+  IF (heapSize > 1)
+  THEN
+    tmp := get(heapSize - 1); -- the very last element in the heap
+    DELETE FROM data
+    WHERE index = (heapSize - 1);
+    UPDATE data
+    SET value = tmp
+    WHERE index = 0;
+  ELSE
+    DELETE FROM data
+    WHERE index = (heapSize - 1);
+  END IF;
+
+  PERFORM heap_heapify(0);
+  RETURN min;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION heap_sort()
+  RETURNS TABLE(index INTEGER, value INTEGER) AS $$
+DECLARE heapSize INTEGER;
+        i        INTEGER;
+BEGIN
+  DROP TABLE IF EXISTS sorted;
+  CREATE TABLE sorted (
+    index INTEGER,
+    value INTEGER
+  );
+  heapSize := (SELECT count(*)
+               FROM data) - 1;
+  FOR i IN 0..heapSize
+  LOOP
+    INSERT INTO sorted VALUES (i, heap_extractMin());
+  END LOOP;
+
+  RETURN QUERY (SELECT *
+                FROM sorted order by sorted.index);
+END;
+$$ LANGUAGE PLPGSQL;
+
+
+create or replace function init_heap()
+RETURNS VOID AS $$
+BEGIN
+  perform heap_insert(3);
+  perform heap_insert(1);
+  perform heap_insert(2);
+  perform heap_insert(0);
+  perform heap_insert(7);
+  perform heap_insert(8);
+  perform heap_insert(9);
+  perform heap_insert(11);
+  perform heap_insert(1); -- notice duplicate values
+  perform heap_insert(3); -- notice duplicate values
+END;
+$$ LANGUAGE PLPGSQL;
+
+select init_heap();
+
+select distinct * from heap_sort() order by 1;
